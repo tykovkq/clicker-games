@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Мини-игра: Ловля денег</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #ffffff;
+        }
+
+        #game {
+            position: relative;
+            width: 100%; /* Устанавливаем адаптивную ширину */
+            max-width: 300px; /* Максимальная ширина для адаптации под мобильные устройства */
+            height: 500px;
+            border: 2px solid #2b2d42;
+            background-color: #f0f0f0;
+            overflow: hidden;
+        }
+
+        #player {
+            position: absolute;
+            bottom: 0;
+            width: 50px;
+            height: 50px;
+            background-color: #D80032;
+            text-align: center;
+            font-size: 2em;
+            line-height: 50px;
+        }
+
+        .falling-object {
+            position: absolute;
+            top: 0;
+            width: 40px;
+            height: 40px;
+            font-size: 2em;
+            text-align: center;
+            line-height: 40px;
+        }
+
+        #score {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            font-size: 1.2em;
+            font-family: 'Montserrat', sans-serif;
+            color: #2b2d42;
+        }
+
+        #game-over {
+            display: none;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 2em;
+            color: #D80032;
+        }
+
+        @media (max-width: 768px) {
+            #game {
+                max-width: 100%; /* Адаптация для маленьких экранов */
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="game">
+        <div id="player">🛒</div>
+        <div id="score">Счёт: 0</div>
+        <div id="game-over">Игра окончена!</div>
+    </div>
+
+    <script>
+        let player = document.getElementById('player');
+        let game = document.getElementById('game');
+        let scoreElement = document.getElementById('score');
+        let gameOverText = document.getElementById('game-over');
+        let score = 0;
+        let gameInterval;
+        let fallingObjects = [];
+
+        // Управление игроком
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'ArrowLeft') {
+                let left = parseInt(window.getComputedStyle(player).getPropertyValue('left'));
+                if (left > 0) {
+                    player.style.left = left - 20 + 'px';
+                }
+            }
+            if (event.key === 'ArrowRight') {
+                let left = parseInt(window.getComputedStyle(player).getPropertyValue('left'));
+                if (left < (game.clientWidth - player.clientWidth)) {
+                    player.style.left = left + 20 + 'px';
+                }
+            }
+        });
+
+        // Список разных эмодзи денег
+        const moneyEmojis = ['💰', '💵', '💶', '💴', '💷'];
+
+        // Создание падающих объектов (деньги и графики падения)
+        function createFallingObject() {
+            let object = document.createElement('div');
+            object.classList.add('falling-object');
+            object.style.left = Math.floor(Math.random() * (game.clientWidth - 40)) + 'px';
+
+            // Рандомно выбираем деньги или график падения
+            if (Math.random() < 0.7) {
+                object.innerHTML = moneyEmojis[Math.floor(Math.random() * moneyEmojis.length)];
+                object.dataset.type = 'money';
+            } else {
+                object.innerHTML = '📉'; // Символ "падение графика"
+                object.dataset.type = 'bad';
+            }
+
+            game.appendChild(object);
+            fallingObjects.push(object);
+        }
+
+        // Логика игры
+        function startGame() {
+            gameInterval = setInterval(function() {
+                createFallingObject();
+
+                // Двигаем объекты вниз
+                fallingObjects.forEach(function(object, index) {
+                    let top = parseInt(window.getComputedStyle(object).getPropertyValue('top'));
+                    object.style.top = top + 5 + 'px';
+
+                    // Проверяем столкновение с игроком
+                    let objectRect = object.getBoundingClientRect();
+                    let playerRect = player.getBoundingClientRect();
+
+                    if (objectRect.bottom >= playerRect.top &&
+                        objectRect.top <= playerRect.bottom &&
+                        objectRect.left >= playerRect.left &&
+                        objectRect.right <= playerRect.right) {
+
+                        if (object.dataset.type === 'money') {
+                            score++;
+                            scoreElement.innerHTML = 'Счёт: ' + score;
+                        } else if (object.dataset.type === 'bad') {
+                            endGame();
+                        }
+                        game.removeChild(object);
+                        fallingObjects.splice(index, 1);
+                    }
+
+                    // Удаляем объекты, вышедшие за пределы экрана
+                    if (top > game.clientHeight) {
+                        game.removeChild(object);
+                        fallingObjects.splice(index, 1);
+                    }
+                });
+
+            }, 1000);
+        }
+
+        // Окончание игры
+        function endGame() {
+            clearInterval(gameInterval);
+            gameOverText.style.display = 'block';
+            fallingObjects.forEach(function(object) {
+                game.removeChild(object);
+            });
+            fallingObjects = [];
+        }
+
+        // Начало игры
+        startGame();
+    </script>
+
+</body>
+</html>
+
